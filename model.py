@@ -48,6 +48,11 @@ class Cpm(nn.Module):
     def forward(self, x):
         x = self.align(x)
         x = self.conv(x + self.trunk(x))
+        torch.nn.init.xavier_uniform_(self.align)
+        torch.nn.init.xavier_uniform_(self.trunk[0])
+        torch.nn.init.xavier_uniform_(self.trunk[1])
+        torch.nn.init.xavier_uniform_(self.trunk[2])
+        torch.nn.init.xavier_uniform_(self.conv)
         return x
 
 
@@ -72,6 +77,16 @@ class InitialStage(nn.Module):
         trunk_features = self.trunk(x)
         heatmaps = self.heatmaps(trunk_features)
         pafs = self.pafs(trunk_features)
+        
+        torch.nn.init.xavier_uniform_(self.trunk[0][0])
+        torch.nn.init.xavier_uniform_(self.trunk[1][0])
+        torch.nn.init.xavier_uniform_(self.trunk[2][0])
+        torch.nn.init.xavier_uniform_(self.heatmaps[0][0])
+        torch.nn.init.xavier_uniform_(self.heatmaps[1][0])
+        torch.nn.init.xavier_uniform_(self.pafs[0][0])
+        torch.nn.init.xavier_uniform_(self.pafs[1][0])
+        
+        
         return [heatmaps, pafs]
 
 
@@ -87,6 +102,10 @@ class RefinementStageBlock(nn.Module):
     def forward(self, x):
         initial_features = self.initial(x)
         trunk_features = self.trunk(initial_features)
+        
+        torch.nn.init.xavier_uniform_(self.initial)
+        torch.nn.init.xavier_uniform_(self.trunk[0][0])
+        torch.nn.init.xavier_uniform_(self.trunk[1][0])
         return initial_features + trunk_features
 
 
@@ -149,7 +168,30 @@ class PoseEstimationWithMobileNet(nn.Module):
         for refinement_stage in self.refinement_stages:
             stages_output.extend(
                 refinement_stage(torch.cat([backbone_features, stages_output[-2], stages_output[-1]], dim=1)))
+            
 
+        torch.nn.init.xavier_uniform_(self.model[0][0])
+        torch.nn.init.xavier_uniform_(self.model[1][0])
+        torch.nn.init.xavier_uniform_(self.model[1][3])
+        torch.nn.init.xavier_uniform_(self.model[2][0])
+        torch.nn.init.xavier_uniform_(self.model[2][3])
+        torch.nn.init.xavier_uniform_(self.model[3][0])
+        torch.nn.init.xavier_uniform_(self.model[3][3])
+        torch.nn.init.xavier_uniform_(self.model[4][0])
+        torch.nn.init.xavier_uniform_(self.model[4][3])
+        torch.nn.init.xavier_uniform_(self.model[5][0])
+        torch.nn.init.xavier_uniform_(self.model[5][3])
+        torch.nn.init.xavier_uniform_(self.model[6][0])
+        torch.nn.init.xavier_uniform_(self.model[6][3])
+        torch.nn.init.xavier_uniform_(self.model[7][0])
+        torch.nn.init.xavier_uniform_(self.model[7][3])
+        torch.nn.init.xavier_uniform_(self.model[8][0])
+        torch.nn.init.xavier_uniform_(self.model[8][3])
+        torch.nn.init.xavier_uniform_(self.model[9][0])
+        torch.nn.init.xavier_uniform_(self.model[9][3])
+        torch.nn.init.xavier_uniform_(self.model[10][0])
+        torch.nn.init.xavier_uniform_(self.model[10][3])
+        
         return stages_output
 
 if __name__ == "__main__":
