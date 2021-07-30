@@ -191,7 +191,7 @@ class CocoKeypoints(torch.utils.data.Dataset):
 
             return self.multi_image_processing(image, anns_, meta, meta_init)
 
-        return self.single_image_processing(image, anns_, meta, meta_init), filepath, anns
+        return self.single_image_processing(image, anns_, meta, meta_init), filepath
 
     def multi_image_processing(self, image_list, anns_list, meta_list, meta_init):
         return list(zip(*[
