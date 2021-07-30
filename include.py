@@ -185,13 +185,13 @@ class CocoKeypoints(torch.utils.data.Dataset):
             'file_name': image_info['file_name'],
         }
 
-        image, anns, meta = self.preprocess(image, anns, None)
+        image, anns_, meta = self.preprocess(image, anns, None)
              
         if isinstance(image, list):
 
-            return self.multi_image_processing(image, anns, meta, meta_init)
+            return self.multi_image_processing(image, anns_, meta, meta_init)
 
-        return self.single_image_processing(image, anns, meta, meta_init), filepath
+        return self.single_image_processing(image, anns_, meta, meta_init), filepath, anns
 
     def multi_image_processing(self, image_list, anns_list, meta_list, meta_init):
         return list(zip(*[
