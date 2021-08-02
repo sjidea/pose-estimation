@@ -34,6 +34,15 @@ def conv_dw_no_bn(in_channels, out_channels, kernel_size=3, padding=1, stride=1,
         nn.ELU(inplace=True),
     )
 
+def weight_init_xavier_uniform(submodule):
+    if isinstance(submodule, torch.nn.Conv2d):
+#         torch.nn.init.xavier_uniform_(submodule.weight)
+        torch.nn.init.normal_(submodule.weight)
+#         submodule.bias.data.fill_(0.01)
+#     elif isinstance(submodule, torch.nn.BatchNorm2d):
+#         submodule.weight.data.fill_(1.0)
+#         submodule.bias.data.zero_()
+
 class Cpm(nn.Module):
     def __init__(self, in_channels, out_channels):
         super().__init__()
@@ -48,14 +57,18 @@ class Cpm(nn.Module):
     def forward(self, x):
         x = self.align(x)
         x = self.conv(x + self.trunk(x))
-        torch.nn.init.xavier_uniform_(self.align[0].weight)
-        torch.nn.init.xavier_uniform_(self.trunk[0][0].weight)
-        torch.nn.init.xavier_uniform_(self.trunk[0][2].weight)
-        torch.nn.init.xavier_uniform_(self.trunk[1][0].weight)
-        torch.nn.init.xavier_uniform_(self.trunk[1][2].weight)
-        torch.nn.init.xavier_uniform_(self.trunk[2][0].weight)
-        torch.nn.init.xavier_uniform_(self.trunk[2][2].weight)
-        torch.nn.init.xavier_uniform_(self.conv[0].weight)
+        
+#         self.align.apply(weight_init_xavier_uniform)
+#         self.trunk.apply(weight_init_xavier_uniform)
+#         self.conv.apply(weight_init_xavier_uniform)
+#         torch.nn.init.xavier_uniform_(self.align[0].weight)
+#         torch.nn.init.xavier_uniform_(self.trunk[0][0].weight)
+#         torch.nn.init.xavier_uniform_(self.trunk[0][2].weight)
+#         torch.nn.init.xavier_uniform_(self.trunk[1][0].weight)
+#         torch.nn.init.xavier_uniform_(self.trunk[1][2].weight)
+#         torch.nn.init.xavier_uniform_(self.trunk[2][0].weight)
+#         torch.nn.init.xavier_uniform_(self.trunk[2][2].weight)
+#         torch.nn.init.xavier_uniform_(self.conv[0].weight)
         return x
 
 
@@ -81,15 +94,17 @@ class InitialStage(nn.Module):
         heatmaps = self.heatmaps(trunk_features)
         pafs = self.pafs(trunk_features)
         
-        torch.nn.init.xavier_uniform_(self.trunk[0][0].weight)
-        torch.nn.init.xavier_uniform_(self.trunk[1][0].weight)
-        torch.nn.init.xavier_uniform_(self.trunk[2][0].weight)
-        torch.nn.init.xavier_uniform_(self.heatmaps[0][0].weight)
-        torch.nn.init.xavier_uniform_(self.heatmaps[1][0].weight)
-        torch.nn.init.xavier_uniform_(self.pafs[0][0].weight)
-        torch.nn.init.xavier_uniform_(self.pafs[1][0].weight)
         
-        
+#         self.trunk.apply(weight_init_xavier_uniform)
+#         self.heatmaps.apply(weight_init_xavier_uniform)
+#         self.pafs.apply(weight_init_xavier_uniform)
+#         torch.nn.init.xavier_uniform_(self.trunk[0][0].weight)
+#         torch.nn.init.xavier_uniform_(self.trunk[1][0].weight)
+#         torch.nn.init.xavier_uniform_(self.trunk[2][0].weight)
+#         torch.nn.init.xavier_uniform_(self.heatmaps[0][0].weight)
+#         torch.nn.init.xavier_uniform_(self.heatmaps[1][0].weight)
+#         torch.nn.init.xavier_uniform_(self.pafs[0][0].weight)
+#         torch.nn.init.xavier_uniform_(self.pafs[1][0].weight)
         return [heatmaps, pafs]
 
 
@@ -106,9 +121,11 @@ class RefinementStageBlock(nn.Module):
         initial_features = self.initial(x)
         trunk_features = self.trunk(initial_features)
         
-        torch.nn.init.xavier_uniform_(self.initial[0].weight)
-        torch.nn.init.xavier_uniform_(self.trunk[0][0].weight)
-        torch.nn.init.xavier_uniform_(self.trunk[1][0].weight)
+#         self.initial.apply(weight_init_xavier_uniform)
+#         self.trunk.apply(weight_init_xavier_uniform)
+#         torch.nn.init.xavier_uniform_(self.initial[0].weight)
+#         torch.nn.init.xavier_uniform_(self.trunk[0][0].weight)
+#         torch.nn.init.xavier_uniform_(self.trunk[1][0].weight)
         return initial_features + trunk_features
 
 
@@ -135,9 +152,14 @@ class RefinementStage(nn.Module):
         trunk_features = self.trunk(x)
         heatmaps = self.heatmaps(trunk_features)
         pafs = self.pafs(trunk_features)
+#         self.trunk.apply(weight_init_xavier_uniform)
+#         self.heatmaps.apply(weight_init_xavier_uniform)
+#         self.pafs.apply(weight_init_xavier_uniform)
         return [heatmaps, pafs]
 
 
+
+    
 class PoseEstimationWithMobileNet(nn.Module):
     def __init__(self, num_refinement_stages=1, num_channels=128, num_heatmaps=19, num_pafs=38):
         super().__init__()
@@ -172,28 +194,28 @@ class PoseEstimationWithMobileNet(nn.Module):
             stages_output.extend(
                 refinement_stage(torch.cat([backbone_features, stages_output[-2], stages_output[-1]], dim=1)))
             
-
-        torch.nn.init.xavier_uniform_(self.model[0][0].weight)
-        torch.nn.init.xavier_uniform_(self.model[1][0].weight)
-        torch.nn.init.xavier_uniform_(self.model[1][3].weight)
-        torch.nn.init.xavier_uniform_(self.model[2][0].weight)
-        torch.nn.init.xavier_uniform_(self.model[2][3].weight)
-        torch.nn.init.xavier_uniform_(self.model[3][0].weight)
-        torch.nn.init.xavier_uniform_(self.model[3][3].weight)
-        torch.nn.init.xavier_uniform_(self.model[4][0].weight)
-        torch.nn.init.xavier_uniform_(self.model[4][3].weight)
-        torch.nn.init.xavier_uniform_(self.model[5][0].weight)
-        torch.nn.init.xavier_uniform_(self.model[5][3].weight)
-        torch.nn.init.xavier_uniform_(self.model[6][0].weight)
-        torch.nn.init.xavier_uniform_(self.model[6][3].weight)
-        torch.nn.init.xavier_uniform_(self.model[7][0].weight)
-        torch.nn.init.xavier_uniform_(self.model[7][3].weight)
-        torch.nn.init.xavier_uniform_(self.model[8][0].weight)
-        torch.nn.init.xavier_uniform_(self.model[8][3].weight)
-        torch.nn.init.xavier_uniform_(self.model[9][0].weight)
-        torch.nn.init.xavier_uniform_(self.model[9][3].weight)
-        torch.nn.init.xavier_uniform_(self.model[10][0].weight)
-        torch.nn.init.xavier_uniform_(self.model[10][3].weight)
+#         self.model.apply(weight_init_xavier_uniform)
+#         torch.nn.init.xavier_uniform_(self.model[0][0].weight)
+#         torch.nn.init.xavier_uniform_(self.model[1][0].weight)
+#         torch.nn.init.xavier_uniform_(self.model[1][3].weight)
+#         torch.nn.init.xavier_uniform_(self.model[2][0].weight)
+#         torch.nn.init.xavier_uniform_(self.model[2][3].weight)
+#         torch.nn.init.xavier_uniform_(self.model[3][0].weight)
+#         torch.nn.init.xavier_uniform_(self.model[3][3].weight)
+#         torch.nn.init.xavier_uniform_(self.model[4][0].weight)
+#         torch.nn.init.xavier_uniform_(self.model[4][3].weight)
+#         torch.nn.init.xavier_uniform_(self.model[5][0].weight)
+#         torch.nn.init.xavier_uniform_(self.model[5][3].weight)
+#         torch.nn.init.xavier_uniform_(self.model[6][0].weight)
+#         torch.nn.init.xavier_uniform_(self.model[6][3].weight)
+#         torch.nn.init.xavier_uniform_(self.model[7][0].weight)
+#         torch.nn.init.xavier_uniform_(self.model[7][3].weight)
+#         torch.nn.init.xavier_uniform_(self.model[8][0].weight)
+#         torch.nn.init.xavier_uniform_(self.model[8][3].weight)
+#         torch.nn.init.xavier_uniform_(self.model[9][0].weight)
+#         torch.nn.init.xavier_uniform_(self.model[9][3].weight)
+#         torch.nn.init.xavier_uniform_(self.model[10][0].weight)
+#         torch.nn.init.xavier_uniform_(self.model[10][3].weight)
         
         return stages_output
 
