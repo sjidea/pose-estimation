@@ -36,12 +36,12 @@ def conv_dw_no_bn(in_channels, out_channels, kernel_size=3, padding=1, stride=1,
 
 def weight_init_xavier_uniform(submodule):
     if isinstance(submodule, torch.nn.Conv2d):
-#         torch.nn.init.xavier_uniform_(submodule.weight)
-        torch.nn.init.normal_(submodule.weight)
-#         submodule.bias.data.fill_(0.01)
+        torch.nn.init.xavier_uniform_(submodule.weight.data)
+#         torch.nn.init.normal_(submodule.weight)
 #     elif isinstance(submodule, torch.nn.BatchNorm2d):
 #         submodule.weight.data.fill_(1.0)
 #         submodule.bias.data.zero_()
+    
 
 class Cpm(nn.Module):
     def __init__(self, in_channels, out_channels):
@@ -57,18 +57,7 @@ class Cpm(nn.Module):
     def forward(self, x):
         x = self.align(x)
         x = self.conv(x + self.trunk(x))
-        
-#         self.align.apply(weight_init_xavier_uniform)
-#         self.trunk.apply(weight_init_xavier_uniform)
-#         self.conv.apply(weight_init_xavier_uniform)
-#         torch.nn.init.xavier_uniform_(self.align[0].weight)
-#         torch.nn.init.xavier_uniform_(self.trunk[0][0].weight)
-#         torch.nn.init.xavier_uniform_(self.trunk[0][2].weight)
-#         torch.nn.init.xavier_uniform_(self.trunk[1][0].weight)
-#         torch.nn.init.xavier_uniform_(self.trunk[1][2].weight)
-#         torch.nn.init.xavier_uniform_(self.trunk[2][0].weight)
-#         torch.nn.init.xavier_uniform_(self.trunk[2][2].weight)
-#         torch.nn.init.xavier_uniform_(self.conv[0].weight)
+
         return x
 
 
@@ -93,18 +82,7 @@ class InitialStage(nn.Module):
         trunk_features = self.trunk(x)
         heatmaps = self.heatmaps(trunk_features)
         pafs = self.pafs(trunk_features)
-        
-        
-#         self.trunk.apply(weight_init_xavier_uniform)
-#         self.heatmaps.apply(weight_init_xavier_uniform)
-#         self.pafs.apply(weight_init_xavier_uniform)
-#         torch.nn.init.xavier_uniform_(self.trunk[0][0].weight)
-#         torch.nn.init.xavier_uniform_(self.trunk[1][0].weight)
-#         torch.nn.init.xavier_uniform_(self.trunk[2][0].weight)
-#         torch.nn.init.xavier_uniform_(self.heatmaps[0][0].weight)
-#         torch.nn.init.xavier_uniform_(self.heatmaps[1][0].weight)
-#         torch.nn.init.xavier_uniform_(self.pafs[0][0].weight)
-#         torch.nn.init.xavier_uniform_(self.pafs[1][0].weight)
+
         return [heatmaps, pafs]
 
 
@@ -120,12 +98,7 @@ class RefinementStageBlock(nn.Module):
     def forward(self, x):
         initial_features = self.initial(x)
         trunk_features = self.trunk(initial_features)
-        
-#         self.initial.apply(weight_init_xavier_uniform)
-#         self.trunk.apply(weight_init_xavier_uniform)
-#         torch.nn.init.xavier_uniform_(self.initial[0].weight)
-#         torch.nn.init.xavier_uniform_(self.trunk[0][0].weight)
-#         torch.nn.init.xavier_uniform_(self.trunk[1][0].weight)
+
         return initial_features + trunk_features
 
 
@@ -152,12 +125,8 @@ class RefinementStage(nn.Module):
         trunk_features = self.trunk(x)
         heatmaps = self.heatmaps(trunk_features)
         pafs = self.pafs(trunk_features)
-#         self.trunk.apply(weight_init_xavier_uniform)
-#         self.heatmaps.apply(weight_init_xavier_uniform)
-#         self.pafs.apply(weight_init_xavier_uniform)
+        
         return [heatmaps, pafs]
-
-
 
     
 class PoseEstimationWithMobileNet(nn.Module):
@@ -178,44 +147,26 @@ class PoseEstimationWithMobileNet(nn.Module):
             conv_dw(512, 512)   # conv5_5
         )
         self.cpm = Cpm(512, num_channels)
-
         self.initial_stage = InitialStage(num_channels, num_heatmaps, num_pafs)
         self.refinement_stages = nn.ModuleList()
+        
         for idx in range(num_refinement_stages):
             self.refinement_stages.append(RefinementStage(num_channels + num_heatmaps + num_pafs, num_channels,
                                                           num_heatmaps, num_pafs))
+            
+        self.model.apply(weight_init_xavier_uniform)
+        self.cpm.apply(weight_init_xavier_uniform)
+        self.initial_stage.apply(weight_init_xavier_uniform)
+        self.refinement_stages.apply(weight_init_xavier_uniform)
 
     def forward(self, x):
         backbone_features = self.model(x)
         backbone_features = self.cpm(backbone_features)
-
         stages_output = self.initial_stage(backbone_features)
         for refinement_stage in self.refinement_stages:
             stages_output.extend(
                 refinement_stage(torch.cat([backbone_features, stages_output[-2], stages_output[-1]], dim=1)))
             
-#         self.model.apply(weight_init_xavier_uniform)
-#         torch.nn.init.xavier_uniform_(self.model[0][0].weight)
-#         torch.nn.init.xavier_uniform_(self.model[1][0].weight)
-#         torch.nn.init.xavier_uniform_(self.model[1][3].weight)
-#         torch.nn.init.xavier_uniform_(self.model[2][0].weight)
-#         torch.nn.init.xavier_uniform_(self.model[2][3].weight)
-#         torch.nn.init.xavier_uniform_(self.model[3][0].weight)
-#         torch.nn.init.xavier_uniform_(self.model[3][3].weight)
-#         torch.nn.init.xavier_uniform_(self.model[4][0].weight)
-#         torch.nn.init.xavier_uniform_(self.model[4][3].weight)
-#         torch.nn.init.xavier_uniform_(self.model[5][0].weight)
-#         torch.nn.init.xavier_uniform_(self.model[5][3].weight)
-#         torch.nn.init.xavier_uniform_(self.model[6][0].weight)
-#         torch.nn.init.xavier_uniform_(self.model[6][3].weight)
-#         torch.nn.init.xavier_uniform_(self.model[7][0].weight)
-#         torch.nn.init.xavier_uniform_(self.model[7][3].weight)
-#         torch.nn.init.xavier_uniform_(self.model[8][0].weight)
-#         torch.nn.init.xavier_uniform_(self.model[8][3].weight)
-#         torch.nn.init.xavier_uniform_(self.model[9][0].weight)
-#         torch.nn.init.xavier_uniform_(self.model[9][3].weight)
-#         torch.nn.init.xavier_uniform_(self.model[10][0].weight)
-#         torch.nn.init.xavier_uniform_(self.model[10][3].weight)
         
         return stages_output
 
@@ -224,23 +175,14 @@ if __name__ == "__main__":
     import time 
     
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-#    device = torch.device("cpu")
     input = torch.Tensor(2, 3, 368, 368).to(device)
-
-#     model_CMU = bodypose_model().to(device)
-#     model_CMU.load_state_dict(torch.load('weights/bodypose_model'))
-#     model_CMU.eval()
     
     model_Mobilenet = PoseEstimationWithMobileNet().to(device)
     model_Mobilenet.load_state_dict(torch.load('weights/MobileNet_bodypose_model'))
     model_Mobilenet.eval()
     
-    since = time.time()
-    
-#     PAF_CMU, Heatmap_CMU = model_CMU(input)
-#     print('CMU PAF shape and Heatmap shape', PAF_CMU.shape, Heatmap_CMU.shape)
+
     t1 = time.time()
-#     print('CMU Inference time is {:2.3f} seconds'.format(t1 - since))
     
     stages_output= model_Mobilenet(input)
     PAF_Mobilenet, Heatmap_Mobilenet = stages_output[-1], stages_output[-2]
