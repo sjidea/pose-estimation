@@ -158,7 +158,7 @@ class MultiScale(Preprocess):
 
 
 class RescaleRelative(Preprocess):
-    def __init__(self, scale_range=(0.5, 1.0), *, resample=PIL.Image.BICUBIC):
+    def __init__(self, scale_range=(0.5, 0.7), *, resample=PIL.Image.BICUBIC):
         self.log = logging.getLogger(self.__class__.__name__)
         self.scale_range = scale_range
         self.resample = resample
