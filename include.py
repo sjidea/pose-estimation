@@ -128,7 +128,8 @@ class CocoKeypoints(torch.utils.data.Dataset):
             self.ids = self.coco.getImgIds(catIds=self.cat_ids)
         else:
             self.ids = self.coco.getImgIds(catIds=self.cat_ids)
-            self.filter_for_keypoint_annotations()
+            self.filter_for_keypoint_annotations()  
+            
         if n_images:
             self.ids = self.ids[:n_images]
         print('Images: {}'.format(len(self.ids)))
@@ -152,7 +153,7 @@ class CocoKeypoints(torch.utils.data.Dataset):
             for ann in anns:
                 if 'keypoints' not in ann:
                     continue
-                if any(v > 0.0 for v in ann['keypoints'][2::3]):
+                if all(v > 0.0 for v in ann['keypoints'][2::3]): # any -> all (every keypoints must exist)
                     return True
             return False
 
