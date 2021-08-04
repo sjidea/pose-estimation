@@ -130,7 +130,7 @@ class RefinementStage(nn.Module):
 
     
 class PoseEstimationWithMobileNet(nn.Module):
-    def __init__(self, num_refinement_stages=1, num_channels=128, num_heatmaps=19, num_pafs=38):
+    def __init__(self, num_refinement_stages=3, num_channels=128, num_heatmaps=19, num_pafs=38):
         super().__init__()
         self.model = nn.Sequential(
             conv(     3,  32, stride=2, bias=False),
