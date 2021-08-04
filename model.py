@@ -188,5 +188,3 @@ if __name__ == "__main__":
     PAF_Mobilenet, Heatmap_Mobilenet = stages_output[-1], stages_output[-2]
     print('Mobilenet PAF shape and Heatmap shape', PAF_Mobilenet.shape, Heatmap_Mobilenet.shape)
     print('Mobilenet Inference time is {:2.3f} seconds'.format(time.time() - t1))
-
-
