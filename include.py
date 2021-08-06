@@ -116,7 +116,7 @@ class CocoKeypoints(torch.utils.data.Dataset):
 
     def __init__(self, root, annFile, image_transform=None, target_transforms=None,
 #                  n_images=None, preprocess=None, all_images=False, all_persons=False, input_y=368, input_x=368, stride=8):
-                 n_images=None, preprocess=None, all_images=False, all_persons=False, input_y=368, input_x=368, stride=8):    
+                 n_images=None, preprocess=None, all_images=False, all_persons=False, input_y=None, input_x=None, stride=8):    
         from pycocotools.coco import COCO
         self.root = root
         self.coco = COCO(annFile)
@@ -293,7 +293,7 @@ class CocoKeypoints(torch.utils.data.Dataset):
                     gaussian_map = heatmaps[:, :, i]
                     heatmaps[:, :, i] = putGaussianMaps(
                         center, gaussian_map,
-                        7.0, grid_y, grid_x, self.stride)
+                        3.0, grid_y, grid_x, self.stride)
         # pafs
         for i, (k1, k2) in enumerate(self.LIMB_IDS):
             # limb

@@ -175,7 +175,7 @@ if __name__ == "__main__":
     import time 
     
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    input = torch.Tensor(2, 3, 368, 368).to(device)
+    input = torch.Tensor(2, 3, 450, 450 ).to(device)
     
     model_Mobilenet = PoseEstimationWithMobileNet().to(device)
     model_Mobilenet.load_state_dict(torch.load('weights/MobileNet_bodypose_model'))
