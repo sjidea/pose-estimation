@@ -11,7 +11,6 @@ import sys
 sys.path.append('/tf/openpose')
 from heatmap import putGaussianMaps
 from paf import putVecMaps
-# from . import transforms, utils
 import transforms
 import utils
 
@@ -134,8 +133,8 @@ class CocoKeypoints(torch.utils.data.Dataset):
             self.ids = self.ids[:n_images]
         print('Images: {}'.format(len(self.ids)))
 
-        self.preprocess = preprocess or transforms.Normalize()
-        self.image_transform = image_transform or transforms.image_transform
+        self.preprocess =  preprocess
+        self.image_transform = transforms.image_transform
         self.target_transforms = target_transforms
         
         self.HEATMAP_COUNT = len(get_keypoints())

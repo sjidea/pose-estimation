@@ -191,7 +191,7 @@ class RescaleRelative(Preprocess):
     def scale(self, image, anns, factor):
         # scale image
         w, h = image.size
-        image = image.resize((int(w * factor), int(h * factor)), self.resample)
+#         image = image.resize((int(w * factor), int(h * factor)), self.resample)
         self.log.debug('before resize = (%f, %f), after = %s', w, h, image.size)
 
         # rescale keypoints
@@ -290,12 +290,12 @@ class Crop(Preprocess):
         w, h = image.size
         padding = int(self.long_edge / 2.0)
         x_offset, y_offset = 0, 0
-        if w > self.long_edge:
-            x_offset = torch.randint(-padding, w - self.long_edge + padding, (1,))
-            x_offset = torch.clamp(x_offset, min=0, max=w - self.long_edge).item()
-        if h > self.long_edge:
-            y_offset = torch.randint(-padding, h - self.long_edge + padding, (1,))
-            y_offset = torch.clamp(y_offset, min=0, max=h - self.long_edge).item()
+#         if w > self.long_edge:
+#             x_offset = torch.randint(-padding, w - self.long_edge + padding, (1,))
+#             x_offset = torch.clamp(x_offset, min=0, max=w - self.long_edge).item()
+#         if h > self.long_edge:
+#             y_offset = torch.randint(-padding, h - self.long_edge + padding, (1,))
+#             y_offset = torch.clamp(y_offset, min=0, max=h - self.long_edge).item()
         self.log.debug('crop offsets (%d, %d)', x_offset, y_offset)
 
         # crop image
