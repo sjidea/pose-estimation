@@ -15,11 +15,11 @@ def conv(in_channels, out_channels, kernel_size=3, padding=1, bn=True, dilation=
 
 def conv_dw(in_channels, out_channels, kernel_size=3, padding=1, stride=1, dilation=1):
     return nn.Sequential(
-        nn.Conv2d(in_channels, in_channels, kernel_size, stride, padding, dilation=dilation, groups=in_channels, bias=False),
+        nn.Conv2d(in_channels, in_channels, kernel_size, stride, padding, dilation=dilation, groups=in_channels, bias=True),
         nn.BatchNorm2d(in_channels),
         nn.ReLU(inplace=True),
 
-        nn.Conv2d(in_channels, out_channels, 1, 1, 0, bias=False),
+        nn.Conv2d(in_channels, out_channels, 1, 1, 0, bias=True),
         nn.BatchNorm2d(out_channels),
         nn.ReLU(inplace=True),
     )
@@ -27,16 +27,17 @@ def conv_dw(in_channels, out_channels, kernel_size=3, padding=1, stride=1, dilat
 
 def conv_dw_no_bn(in_channels, out_channels, kernel_size=3, padding=1, stride=1, dilation=1):
     return nn.Sequential(
-        nn.Conv2d(in_channels, in_channels, kernel_size, stride, padding, dilation=dilation, groups=in_channels, bias=False),
+        nn.Conv2d(in_channels, in_channels, kernel_size, stride, padding, dilation=dilation, groups=in_channels, bias=True),
         nn.ELU(inplace=True),
 
-        nn.Conv2d(in_channels, out_channels, 1, 1, 0, bias=False),
+        nn.Conv2d(in_channels, out_channels, 1, 1, 0, bias=True),
         nn.ELU(inplace=True),
     )
 
 def weight_init_xavier_uniform(submodule):
     if isinstance(submodule, torch.nn.Conv2d):
         torch.nn.init.xavier_uniform_(submodule.weight.data)
+        torch.nn.init.xavier_uniform_(submodule.bias.data)
 #         torch.nn.init.normal_(submodule.weight)
 #     elif isinstance(submodule, torch.nn.BatchNorm2d):
 #         submodule.weight.data.fill_(1.0)
@@ -130,7 +131,7 @@ class RefinementStage(nn.Module):
 
     
 class PoseEstimationWithMobileNet(nn.Module):
-    def __init__(self, num_refinement_stages=6, num_channels=128, num_heatmaps=19, num_pafs=38):
+    def __init__(self, num_refinement_stages=1, num_channels=128, num_heatmaps=19, num_pafs=38):
         super().__init__()
         self.model = nn.Sequential(
             conv(     3,  32, stride=2, bias=False),
@@ -154,10 +155,24 @@ class PoseEstimationWithMobileNet(nn.Module):
             self.refinement_stages.append(RefinementStage(num_channels + num_heatmaps + num_pafs, num_channels,
                                                           num_heatmaps, num_pafs))
             
-        self.model.apply(weight_init_xavier_uniform)
-        self.cpm.apply(weight_init_xavier_uniform)
-        self.initial_stage.apply(weight_init_xavier_uniform)
-        self.refinement_stages.apply(weight_init_xavier_uniform)
+#         self.model.apply(weight_init_xavier_uniform)
+
+#         self.model[0].apply(weight_init_xavier_uniform)
+#         self.model[1].apply(weight_init_xavier_uniform)
+#         self.model[2].apply(weight_init_xavier_uniform)
+#         self.model[3].apply(weight_init_xavier_uniform)
+#         self.model[4].apply(weight_init_xavier_uniform)
+#         self.model[5].apply(weight_init_xavier_uniform)
+#         self.model[6].apply(weight_init_xavier_uniform)
+#         self.model[7].apply(weight_init_xavier_uniform)
+#         self.model[8].apply(weight_init_xavier_uniform)
+#         self.model[9].apply(weight_init_xavier_uniform)
+#         self.model[10].apply(weight_init_xavier_uniform)
+#         self.model[11].apply(weight_init_xavier_uniform)
+        
+#         self.cpm.apply(weight_init_xavier_uniform) 
+#         self.initial_stage.apply(weight_init_xavier_uniform)
+#         self.refinement_stages[0].apply(weight_init_xavier_uniform)
 
     def forward(self, x):
         backbone_features = self.model(x)
