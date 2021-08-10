@@ -2,8 +2,6 @@ import torch
 from collections import OrderedDict
 import torch.nn as nn
 
-################### Mobilenet ########################
-
 def conv(in_channels, out_channels, kernel_size=3, padding=1, bn=True, dilation=1, stride=1, relu=True, bias=True):
     modules = [nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding, dilation, bias=bias)]
     if bn:
@@ -15,11 +13,11 @@ def conv(in_channels, out_channels, kernel_size=3, padding=1, bn=True, dilation=
 
 def conv_dw(in_channels, out_channels, kernel_size=3, padding=1, stride=1, dilation=1):
     return nn.Sequential(
-        nn.Conv2d(in_channels, in_channels, kernel_size, stride, padding, dilation=dilation, groups=in_channels, bias=True),
+        nn.Conv2d(in_channels, in_channels, kernel_size, stride, padding, dilation=dilation, groups=in_channels, bias=False),
         nn.BatchNorm2d(in_channels),
         nn.ReLU(inplace=True),
 
-        nn.Conv2d(in_channels, out_channels, 1, 1, 0, bias=True),
+        nn.Conv2d(in_channels, out_channels, 1, 1, 0, bias=False),
         nn.BatchNorm2d(out_channels),
         nn.ReLU(inplace=True),
     )
@@ -27,22 +25,17 @@ def conv_dw(in_channels, out_channels, kernel_size=3, padding=1, stride=1, dilat
 
 def conv_dw_no_bn(in_channels, out_channels, kernel_size=3, padding=1, stride=1, dilation=1):
     return nn.Sequential(
-        nn.Conv2d(in_channels, in_channels, kernel_size, stride, padding, dilation=dilation, groups=in_channels, bias=True),
+        nn.Conv2d(in_channels, in_channels, kernel_size, stride, padding, dilation=dilation, groups=in_channels, bias=False),
         nn.ELU(inplace=True),
 
-        nn.Conv2d(in_channels, out_channels, 1, 1, 0, bias=True),
+        nn.Conv2d(in_channels, out_channels, 1, 1, 0, bias=False),
         nn.ELU(inplace=True),
     )
 
-def weight_init_xavier_uniform(submodule):
+def init_weight_bias(submodule):
     if isinstance(submodule, torch.nn.Conv2d):
         torch.nn.init.xavier_uniform_(submodule.weight.data)
         torch.nn.init.xavier_uniform_(submodule.bias.data)
-#         torch.nn.init.normal_(submodule.weight)
-#     elif isinstance(submodule, torch.nn.BatchNorm2d):
-#         submodule.weight.data.fill_(1.0)
-#         submodule.bias.data.zero_()
-    
 
 class Cpm(nn.Module):
     def __init__(self, in_channels, out_channels):
@@ -58,9 +51,7 @@ class Cpm(nn.Module):
     def forward(self, x):
         x = self.align(x)
         x = self.conv(x + self.trunk(x))
-
         return x
-
 
 class InitialStage(nn.Module):
     def __init__(self, num_channels, num_heatmaps, num_pafs):
@@ -70,66 +61,62 @@ class InitialStage(nn.Module):
             conv(num_channels, num_channels, bn=False),
             conv(num_channels, num_channels, bn=False)
         )
-        self.heatmaps = nn.Sequential(
+        self.hm = nn.Sequential(
             conv(num_channels, 512, kernel_size=1, padding=0, bn=False),
             conv(512, num_heatmaps, kernel_size=1, padding=0, bn=False, relu=False)
         )
-        self.pafs = nn.Sequential(
+        self.paf = nn.Sequential(
             conv(num_channels, 512, kernel_size=1, padding=0, bn=False),
             conv(512, num_pafs, kernel_size=1, padding=0, bn=False, relu=False)
         )
 
     def forward(self, x):
         trunk_features = self.trunk(x)
-        heatmaps = self.heatmaps(trunk_features)
-        pafs = self.pafs(trunk_features)
-
+        heatmaps = self.hm(trunk_features)
+        pafs = self.paf(trunk_features)
         return [heatmaps, pafs]
 
 
 class RefinementStageBlock(nn.Module):
     def __init__(self, in_channels, out_channels):
         super().__init__()
-        self.initial = conv(in_channels, out_channels, kernel_size=1, padding=0, bn=False)
-        self.trunk = nn.Sequential(
+        self.init = conv(in_channels, out_channels, kernel_size=1, padding=0, bn=False)
+        self.trun = nn.Sequential(
             conv(out_channels, out_channels),
             conv(out_channels, out_channels, dilation=2, padding=2)
         )
 
     def forward(self, x):
-        initial_features = self.initial(x)
-        trunk_features = self.trunk(initial_features)
-
+        initial_features = self.init(x)
+        trunk_features = self.trun(initial_features)
         return initial_features + trunk_features
 
 
 class RefinementStage(nn.Module):
     def __init__(self, in_channels, out_channels, num_heatmaps, num_pafs):
         super().__init__()
-        self.trunk = nn.Sequential(
+        self.trun = nn.Sequential(
             RefinementStageBlock(in_channels, out_channels),
             RefinementStageBlock(out_channels, out_channels),
             RefinementStageBlock(out_channels, out_channels),
             RefinementStageBlock(out_channels, out_channels),
             RefinementStageBlock(out_channels, out_channels)
         )
-        self.heatmaps = nn.Sequential(
+        self.heatmap = nn.Sequential(
             conv(out_channels, out_channels, kernel_size=1, padding=0, bn=False),
             conv(out_channels, num_heatmaps, kernel_size=1, padding=0, bn=False, relu=False)
         )
-        self.pafs = nn.Sequential(
+        self.paf = nn.Sequential(
             conv(out_channels, out_channels, kernel_size=1, padding=0, bn=False),
             conv(out_channels, num_pafs, kernel_size=1, padding=0, bn=False, relu=False)
         )
 
     def forward(self, x):
-        trunk_features = self.trunk(x)
-        heatmaps = self.heatmaps(trunk_features)
-        pafs = self.pafs(trunk_features)
-        
+        trunk_features = self.trun(x)
+        heatmaps = self.heatmap(trunk_features)
+        pafs = self.paf(trunk_features)
         return [heatmaps, pafs]
 
-    
 class PoseEstimationWithMobileNet(nn.Module):
     def __init__(self, num_refinement_stages=1, num_channels=128, num_heatmaps=19, num_pafs=38):
         super().__init__()
@@ -148,58 +135,23 @@ class PoseEstimationWithMobileNet(nn.Module):
             conv_dw(512, 512)   # conv5_5
         )
         self.cpm = Cpm(512, num_channels)
+
         self.initial_stage = InitialStage(num_channels, num_heatmaps, num_pafs)
         self.refinement_stages = nn.ModuleList()
-        
         for idx in range(num_refinement_stages):
             self.refinement_stages.append(RefinementStage(num_channels + num_heatmaps + num_pafs, num_channels,
                                                           num_heatmaps, num_pafs))
-            
-#         self.model.apply(weight_init_xavier_uniform)
-
-#         self.model[0].apply(weight_init_xavier_uniform)
-#         self.model[1].apply(weight_init_xavier_uniform)
-#         self.model[2].apply(weight_init_xavier_uniform)
-#         self.model[3].apply(weight_init_xavier_uniform)
-#         self.model[4].apply(weight_init_xavier_uniform)
-#         self.model[5].apply(weight_init_xavier_uniform)
-#         self.model[6].apply(weight_init_xavier_uniform)
-#         self.model[7].apply(weight_init_xavier_uniform)
-#         self.model[8].apply(weight_init_xavier_uniform)
-#         self.model[9].apply(weight_init_xavier_uniform)
-#         self.model[10].apply(weight_init_xavier_uniform)
-#         self.model[11].apply(weight_init_xavier_uniform)
         
-#         self.cpm.apply(weight_init_xavier_uniform) 
-#         self.initial_stage.apply(weight_init_xavier_uniform)
-#         self.refinement_stages[0].apply(weight_init_xavier_uniform)
+        self.initial_stage.trun.apply(init_weight_bias)
+        self.refinement_stages.apply(init_weight_bias)
 
     def forward(self, x):
         backbone_features = self.model(x)
         backbone_features = self.cpm(backbone_features)
+
         stages_output = self.initial_stage(backbone_features)
         for refinement_stage in self.refinement_stages:
             stages_output.extend(
                 refinement_stage(torch.cat([backbone_features, stages_output[-2], stages_output[-1]], dim=1)))
-            
-        
+
         return stages_output
-
-if __name__ == "__main__":
-
-    import time 
-    
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    input = torch.Tensor(2, 3, 450, 450 ).to(device)
-    
-    model_Mobilenet = PoseEstimationWithMobileNet().to(device)
-    model_Mobilenet.load_state_dict(torch.load('weights/MobileNet_bodypose_model'))
-    model_Mobilenet.eval()
-    
-
-    t1 = time.time()
-    
-    stages_output= model_Mobilenet(input)
-    PAF_Mobilenet, Heatmap_Mobilenet = stages_output[-1], stages_output[-2]
-    print('Mobilenet PAF shape and Heatmap shape', PAF_Mobilenet.shape, Heatmap_Mobilenet.shape)
-    print('Mobilenet Inference time is {:2.3f} seconds'.format(time.time() - t1))
